@@ -1,0 +1,15 @@
+name: DeathTotems
+version: 1.1.2
+main: me.olipulse.deathtotems.DeathTotems
+api-version: "1.14"
+depend: [Vault]
+authors: [OliPulse]
+description: A custom inventory restoring plugin, restore by using in-game money or retrieving your Death Totem.
+commands:
+  deathtotems:
+    usage: /<command>
+    description: The main DeathTotems Command
+    aliases: ["dt", "deathtotem"]
+  restore:
+    usage: /<command>
+    description: The main command to restore your inventory upon death.

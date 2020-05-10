@@ -1,0 +1,30 @@
+# The prefix that will be in front of messages your players receive. Use empty "" to remove the prefix.
+chat-prefix: "&b[&3DeathTotems&b] "
+# The message players get when they die. Placeholders: %POSITION_X%, %POSITION_Y%, %POSITION_Z%
+death-message: "&cYou have lost your items. You can use &a/restore &cfor &e$500 &cor go back to your death totem at &aX: &f%POSITION_X% &aY: &f%POSITION_Y% &aZ: &f%POSITION_Z% &cto recover your items. Hurry, cause they'll be lost &4FOR EVER &cin 3 minutes."
+# The amount of time the players have to recover their items in seconds.
+recover-timer: 180
+# The message players get when they recover their items.
+recover-message: "&aYou have successfully recovered your items for &e$500&a."
+# The message players get when the time runs out and their items are lost.
+time-up-message: "&cYour death totem has been removed."
+# The price for the /recover command.
+recover-price: 500
+# The message players get when they try to restore their items but don't have enough money.
+not-enough-money-message: "&cYou do not have enough money to restore your items. You need at least &e$500&a."
+# The message players get when they try to restore when they didn't die or the time ran out.
+invalid-restore: "&cYou do not have any pending items."
+# The block type of the death totem. https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html
+death-totem-material: "MOSSY_COBBLESTONE_WALL"
+# The message players get when they successfully retrieve their own pending death totem.
+death-totem-message: "&aYou have successfully retrieved your death totem."
+# The message players get when they click a death totem that isn't theirs.
+invalid-death-totem-message: "&cThis is not your pending death totem."
+# The hologram above the death totem. Placeholder: %PLAYER%
+death-totem-hologram: "&a%PLAYER%'s &bDeath Totem"
+
+# PERMISSIONS:
+# deathtotems.bypass - Allows players to keep inventory upon death.
+# deathtotems.default - Allows players to open the in-game help menu with /dt help and gives access to the /dt discord command.
+# deathtotems.reload - Allows players to reload the plugin with /dt reload.
+# deathtotems.list - Allows players to see a list of all pending death totems with /dt list.
