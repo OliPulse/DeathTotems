@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 
 public class CommandClass implements CommandExecutor, TabCompleter {
 
-    private DeathTotems plugin;
-    private Economy economy;
-    private String CHATPREFIX = "&b[&3DeathTotems&b] ";
+    private final DeathTotems plugin;
+    private final Economy economy;
+    private final String CHATPREFIX = "&b[&3DeathTotems&b] ";
 
 
     public CommandClass(DeathTotems plugin, Economy economy) {
@@ -58,7 +58,9 @@ public class CommandClass implements CommandExecutor, TabCompleter {
                     }
                 } else if (args[0].equalsIgnoreCase("restore")) {
                     if (player != null) {
-                        restoreInventory(player);
+                        if (player.hasPermission("deathtotems.restore")) {
+                            restoreInventory(player);
+                        }
                     }
                 } else if (args[0].equalsIgnoreCase("list")) {
                     if (sender.hasPermission("deathtotems.list")) {

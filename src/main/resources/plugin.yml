@@ -13,3 +13,4 @@ commands:
   restore:
     usage: /<command>
     description: The main command to restore your inventory upon death.
+    permission: "deathtotems.restore"

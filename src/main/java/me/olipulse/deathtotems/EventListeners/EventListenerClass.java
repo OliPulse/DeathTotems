@@ -34,7 +34,7 @@ public class EventListenerClass implements Listener {
     private static Material deathTotemMaterial;
     private static List<Particle> particles;
     private static Random random;
-    private String customPrefix;
+    private final String customPrefix;
 
     public EventListenerClass(DeathTotems plugin) {
         EventListenerClass.plugin = plugin;
@@ -56,32 +56,45 @@ public class EventListenerClass implements Listener {
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player player = e.getEntity();
         if (!player.hasPermission("deathtotems.bypass")) {
-            Inventory inventory = player.getInventory();
-            UUID playerUUID = player.getUniqueId();
-            if (!pendingDeathTotems.containsKey(playerUUID)) {
-                if (inventoryHasItems(player.getInventory())) {
-                    Configuration config = plugin.getConfig();
-                    String deathMessage = config.getString("death-message");
-                    String customPrefix = config.getString("chat-prefix");
-                    if (deathMessage != null) {
-                        deathMessage = deathMessage.replaceAll("%POSITION_X%", ((int)player.getLocation().getX()) + "");
-                        deathMessage = deathMessage.replaceAll("%POSITION_Y%", ((int)player.getLocation().getY()) + "");
-                        deathMessage = deathMessage.replaceAll("%POSITION_Z%", ((int)player.getLocation().getZ()) + "");
-                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + deathMessage));
+            Configuration config = plugin.getConfig();
+            List<String> blocked = config.getStringList("BlockedWorlds");
+            if (!blocked.contains(player.getWorld().getName().toLowerCase())) {
+                Inventory inventory = player.getInventory();
+                UUID playerUUID = player.getUniqueId();
+                if (!pendingDeathTotems.containsKey(playerUUID)) {
+                    if (inventoryHasItems(player.getInventory())) {
+                        String deathMessage = config.getString("death-message");
+                        String customPrefix = config.getString("chat-prefix");
+                        if (deathMessage != null) {
+                            deathMessage = deathMessage.replaceAll("%POSITION_X%", ((int) player.getLocation().getX()) + "");
+                            deathMessage = deathMessage.replaceAll("%POSITION_Y%", ((int) player.getLocation().getY()) + "");
+                            deathMessage = deathMessage.replaceAll("%POSITION_Z%", ((int) player.getLocation().getZ()) + "");
+                            player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + deathMessage));
 
-                        String hologram = config.getString("death-totem-hologram");
-                        if (hologram != null) {
-                            hologram = ChatColor.translateAlternateColorCodes('&', hologram.replaceAll("%PLAYER%", player.getName()));
+                            String hologram = config.getString("death-totem-hologram");
+                            if (hologram != null) {
+                                hologram = ChatColor.translateAlternateColorCodes('&', hologram.replaceAll("%PLAYER%", player.getName()));
+                            }
+                            DeathTotem deathTotem = new DeathTotem(e.getEntity().getLocation(), inventory, player, deathTotemMaterial, hologram);
+                            pendingDeathTotems.put(playerUUID, deathTotem);
+
+                            Inventory pendingInventory = Bukkit.createInventory(inventory.getHolder(), inventory.getType());
+                            pendingInventory.setContents(inventory.getContents());
+                            pendingInventories.put(playerUUID, pendingInventory);
+                            startTimer(player);
+                            inventory.clear();
                         }
-                        DeathTotem deathTotem = new DeathTotem(e.getEntity().getLocation(), inventory, player, deathTotemMaterial, hologram);
-                        pendingDeathTotems.put(playerUUID, deathTotem);
-
-                        Inventory pendingInventory = Bukkit.createInventory(inventory.getHolder(), inventory.getType());
-                        pendingInventory.setContents(inventory.getContents());
-                        pendingInventories.put(playerUUID, pendingInventory);
-                        startTimer(player);
-                        inventory.clear();
                     }
+                } else {
+                    Player p = player;
+                    Location loc = p.getLocation().clone();
+                    Inventory inv = p.getInventory();
+                    for (ItemStack item : inv.getContents()) {
+                        if (item != null) {
+                            loc.getWorld().dropItemNaturally(loc, item.clone());
+                        }
+                    }
+                    inv.clear();
                 }
             }
         }
