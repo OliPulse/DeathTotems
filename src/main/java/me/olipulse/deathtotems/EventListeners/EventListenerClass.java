@@ -16,7 +16,6 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -34,7 +33,7 @@ public class EventListenerClass implements Listener {
     private static Material deathTotemMaterial;
     private static List<Particle> particles;
     private static Random random;
-    private String customPrefix;
+    private final String customPrefix;
 
     public EventListenerClass(DeathTotems plugin) {
         EventListenerClass.plugin = plugin;
@@ -58,30 +57,33 @@ public class EventListenerClass implements Listener {
         if (!player.hasPermission("deathtotems.bypass")) {
             Inventory inventory = player.getInventory();
             UUID playerUUID = player.getUniqueId();
-            if (!pendingDeathTotems.containsKey(playerUUID)) {
-                if (inventoryHasItems(player.getInventory())) {
-                    Configuration config = plugin.getConfig();
-                    String deathMessage = config.getString("death-message");
-                    String customPrefix = config.getString("chat-prefix");
-                    if (deathMessage != null) {
-                        deathMessage = deathMessage.replaceAll("%POSITION_X%", ((int)player.getLocation().getX()) + "");
-                        deathMessage = deathMessage.replaceAll("%POSITION_Y%", ((int)player.getLocation().getY()) + "");
-                        deathMessage = deathMessage.replaceAll("%POSITION_Z%", ((int)player.getLocation().getZ()) + "");
-                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + deathMessage));
+            if (inventoryHasItems(player.getInventory())) {
+                if (pendingDeathTotems.containsKey(playerUUID)) {
+                    removePlayerFromPendingHashMaps(player, false);
+                }
+                Configuration config = plugin.getConfig();
+                String deathMessage = config.getString("death-message");
+                String customPrefix = config.getString("chat-prefix");
+                if (deathMessage != null) {
+                    deathMessage = deathMessage.replaceAll("%POSITION_X%", ((int)player.getLocation().getX()) + "");
+                    deathMessage = deathMessage.replaceAll("%POSITION_Y%", ((int)player.getLocation().getY()) + "");
+                    deathMessage = deathMessage.replaceAll("%POSITION_Z%", ((int)player.getLocation().getZ()) + "");
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + deathMessage));
 
-                        String hologram = config.getString("death-totem-hologram");
-                        if (hologram != null) {
-                            hologram = ChatColor.translateAlternateColorCodes('&', hologram.replaceAll("%PLAYER%", player.getName()));
-                        }
-                        DeathTotem deathTotem = new DeathTotem(e.getEntity().getLocation(), inventory, player, deathTotemMaterial, hologram);
-                        pendingDeathTotems.put(playerUUID, deathTotem);
-
-                        Inventory pendingInventory = Bukkit.createInventory(inventory.getHolder(), inventory.getType());
-                        pendingInventory.setContents(inventory.getContents());
-                        pendingInventories.put(playerUUID, pendingInventory);
-                        startTimer(player);
-                        inventory.clear();
+                    String hologram = config.getString("death-totem-hologram");
+                    if (hologram != null) {
+                        hologram = ChatColor.translateAlternateColorCodes('&', hologram.replaceAll("%PLAYER%", player.getName()));
                     }
+                    //Future update: handle player exp
+                    //player.sendMessage(player.getExp() + "");
+                    DeathTotem deathTotem = new DeathTotem(e.getEntity().getLocation(), inventory, player, deathTotemMaterial, hologram);
+                    pendingDeathTotems.put(playerUUID, deathTotem);
+
+                    Inventory pendingInventory = Bukkit.createInventory(inventory.getHolder(), inventory.getType());
+                    pendingInventory.setContents(inventory.getContents());
+                    pendingInventories.put(playerUUID, pendingInventory);
+                    startTimer(player, playerUUID);
+                    inventory.clear();
                 }
             }
         }
@@ -96,7 +98,7 @@ public class EventListenerClass implements Listener {
                 if (deathTotem != null) {
                     Configuration config = plugin.getConfig();
                     Player player = e.getPlayer();
-                    if (deathTotem.getPlayer() == player) {
+                    if (deathTotem.getPlayer().getUniqueId().equals(player.getUniqueId())) {
                         if (e.useInteractedBlock() == Event.Result.DENY) {
                             e.setUseInteractedBlock(Event.Result.ALLOW);
                         }
@@ -106,14 +108,8 @@ public class EventListenerClass implements Listener {
                         if (deathTotemMessage != null) {
                             player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + deathTotemMessage));
 
-                            deathTotem.delete();
-                            deathTotem.dropItems();
-                            UUID playerUUID = player.getUniqueId();
+                            removePlayerFromPendingHashMaps(player, true);
 
-                            pendingDeathTotems.remove(playerUUID);
-                            pendingInventories.remove(playerUUID);
-                            stopPlayersCurrentTimer(player);
-                            pendingTimers.remove(playerUUID);
                             e.setCancelled(true);
                             playAnimationAndSound(player, deathTotem.getLocation());
                         }
@@ -129,14 +125,15 @@ public class EventListenerClass implements Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
-    public void onPlayerQuit(PlayerQuitEvent e) {
-        Player player = e.getPlayer();
-        UUID playerUUID = player.getUniqueId();
-        if (pendingDeathTotems.containsKey(playerUUID)) {
-            removePlayerFromPendingHashMaps(player);
-        }
-    }
+      // Remove the totem on disconnect
+//    @EventHandler(ignoreCancelled = true)
+//    public void onPlayerQuit(PlayerQuitEvent e) {
+//        Player player = e.getPlayer();
+//        UUID playerUUID = player.getUniqueId();
+//        if (pendingDeathTotems.containsKey(playerUUID)) {
+//            removePlayerFromPendingHashMaps(player, false);
+//        }
+//    }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onDeathTotemExplode(EntityExplodeEvent e) {
@@ -193,30 +190,39 @@ public class EventListenerClass implements Listener {
         return false;
     }
 
-    public void startTimer(Player player) {
+    public void startTimer(Player player, UUID playerUUID) {
         Configuration config = plugin.getConfig();
         Runnable runnable = () -> {
-            if (removePlayerFromPendingHashMaps(player)) {
+            boolean shouldDropItems = false;
+            if (config.contains("drop-items-on-time-up")) {
+                shouldDropItems = config.getBoolean("drop-items-on-time-up");
+            }
+            if (removePlayerFromPendingHashMaps(player, shouldDropItems)) {
                 String timeUpMessage = config.getString("time-up-message");
                 if (timeUpMessage != null) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + timeUpMessage));
+                    Bukkit.getOnlinePlayers().stream().filter(p -> p.getUniqueId().equals(playerUUID)).findFirst()
+                            .ifPresent(playerToMessage -> playerToMessage.sendMessage(
+                                    ChatColor.translateAlternateColorCodes('&', customPrefix + timeUpMessage)));
                 }
             }
         };
         long time = config.getLong("recover-timer") * 20;
         int id = scheduler.runTaskLater(plugin, runnable, time).getTaskId();
-        UUID playerUUID = player.getUniqueId();
         pendingTimers.put(playerUUID, id);
     }
 
-    public static boolean removePlayerFromPendingHashMaps(Player player) {
+    public static boolean removePlayerFromPendingHashMaps(Player player, boolean shouldDropItems) {
         boolean deleted = false;
         UUID playerUUID = player.getUniqueId();
         pendingInventories.remove(playerUUID);
         stopPlayersCurrentTimer(player);
         pendingTimers.remove(playerUUID);
         if (pendingDeathTotems.containsKey(playerUUID)) {
-            deleted = pendingDeathTotems.get(playerUUID).delete();
+            DeathTotem deathTotem = pendingDeathTotems.get(playerUUID);
+            deleted = deathTotem.delete();
+            if (shouldDropItems) {
+                deathTotem.dropItems();
+            }
         }
 
         pendingDeathTotems.remove(playerUUID);

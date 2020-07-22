@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameRule;
 import org.bukkit.World;
+import org.bukkit.configuration.Configuration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -80,7 +81,12 @@ public final class DeathTotems extends JavaPlugin {
                     String customPrefix = getConfig().getString("chat-prefix");
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + timeUpMessage));
                 }
-                EventListenerClass.removePlayerFromPendingHashMaps(player);
+                boolean shouldDropItems = false;
+                Configuration config = getConfig();
+                if (config.contains("drop-items-on-time-up")) {
+                    shouldDropItems = config.getBoolean("drop-items-on-time-up");
+                }
+                EventListenerClass.removePlayerFromPendingHashMaps(player, shouldDropItems);
             }
         }
 

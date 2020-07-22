@@ -8,6 +8,8 @@ recover-timer: 180
 recover-message: "&aYou have successfully recovered your items for &e$500&a."
 # The message players get when the time runs out and their items are lost.
 time-up-message: "&cYour death totem has been removed."
+# Toggle whether the items will drop when the totem's time is up and it hasn't been claimed.
+drop-items-on-time-up: false
 # The price for the /recover command.
 recover-price: 500
 # The message players get when they try to restore their items but don't have enough money.

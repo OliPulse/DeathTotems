@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 
 public class CommandClass implements CommandExecutor, TabCompleter {
 
-    private DeathTotems plugin;
-    private Economy economy;
-    private String CHATPREFIX = "&b[&3DeathTotems&b] ";
+    private final DeathTotems plugin;
+    private final Economy economy;
+    private final String CHATPREFIX = "&b[&3DeathTotems&b] ";
 
 
     public CommandClass(DeathTotems plugin, Economy economy) {
@@ -130,7 +130,7 @@ public class CommandClass implements CommandExecutor, TabCompleter {
                 EventListenerClass.playAnimationAndSound(player, pendingDeathTotems.get(playerUUID).getLocation());
                 player.getInventory().setContents(pendingInventories.get(playerUUID).getContents());
                 EventListenerClass.stopPlayersCurrentTimer(player);
-                EventListenerClass.removePlayerFromPendingHashMaps(player);
+                EventListenerClass.removePlayerFromPendingHashMaps(player, false);
                 String recoverMessage = config.getString("recover-message");
                 if (recoverMessage != null) {
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + recoverMessage));

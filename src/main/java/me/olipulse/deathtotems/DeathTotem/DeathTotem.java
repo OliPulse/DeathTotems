@@ -4,6 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -40,10 +41,24 @@ public class DeathTotem {
             location.setZ(location.getZ() - 1);
         }
         this.location = new Location(location.getWorld(), (int)(location.getX()), (int)location.getY(), (int)location.getZ());
+        //Fix block height limit issue
+        if (this.location.getY() > 255) {
+            this.location.setY(255);
+        }
+        //Fix below 0 totem  issue
+        if (this.location.getY() < 0) {
+            this.location.setY(0);
+        }
         previousBlock = this.location.getBlock().getBlockData().clone();
+        //Disable stealing from chests
+        if (previousBlock.getMaterial() == Material.CHEST && this.location.getY() < 255) {
+            this.location.setY(this.location.getY() + 1);
+            previousBlock = this.location.getBlock().getBlockData().clone();
+        }
         this.inventory = inventory;
         items = Arrays.asList(inventory.getContents());
-        items = items.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        //Remove curse of vanishing and null items
+        items = items.stream().filter(i -> i != null && !i.getEnchantments().containsKey(Enchantment.VANISHING_CURSE)).collect(Collectors.toList());
         this.player = player;
         this.material = material;
         spawn(hologram);
@@ -106,7 +121,10 @@ public class DeathTotem {
 
     public void restoreReplacedBlocks() {
         location.getBlock().setType(Material.AIR);
-        location.getBlock().setBlockData(previousBlock);
+        //Don't replace lava (items will burn)
+        if (previousBlock.getMaterial() != Material.LAVA) {
+            location.getBlock().setBlockData(previousBlock);
+        }
     }
 
     public List<ItemStack> getItems() {
