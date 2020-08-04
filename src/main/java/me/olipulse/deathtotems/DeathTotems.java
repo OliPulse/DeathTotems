@@ -13,10 +13,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public final class DeathTotems extends JavaPlugin {
 
@@ -24,6 +26,7 @@ public final class DeathTotems extends JavaPlugin {
     private static Economy economy = null;
     private static CommandClass commandClass;
     private static EventListenerClass eventListenerClass;
+    private static final List<World> disabledWorlds = new ArrayList<>();
 
     @Override
     public void onEnable() {
@@ -44,9 +47,7 @@ public final class DeathTotems extends JavaPlugin {
         eventListenerClass = new EventListenerClass(this);
         getServer().getPluginManager().registerEvents(eventListenerClass, this);
 
-        for (World world : Bukkit.getWorlds()) {
-            world.setGameRule(GameRule.KEEP_INVENTORY, true);
-        }
+        setupDisabledWorlds();
 
         getServer().getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', "Enabled &b[&3DeathTotems&b] &8v" + getDescription().getVersion() + "&r - by &9OliPulse"));
     }
@@ -92,8 +93,33 @@ public final class DeathTotems extends JavaPlugin {
 
         eventListenerClass = new EventListenerClass(this);
 
-        for (World world : Bukkit.getWorlds()) {
-            world.setGameRule(GameRule.KEEP_INVENTORY, true);
+        setupDisabledWorlds();
+    }
+
+    private void  setupDisabledWorlds() {
+        disabledWorlds.clear();
+        Configuration config = getConfig();
+        if (config.contains("disabled-worlds", true)) {
+            List<String> disabledWorldNames = config.getStringList("disabled-worlds").stream().filter(s -> !s.equals("")).collect(Collectors.toList());
+            disabledWorldNames.forEach(worldName -> {
+                        World world = Bukkit.getWorld(worldName);
+                if (world != null) {
+                            disabledWorlds.add(world);
+                        } else {
+                            log.warning(String.format("[%s] - Could not find disabled world with name '%s'!", getDescription().getName(), worldName));
+                        }
+                    }
+            );
         }
+
+        for (World world : Bukkit.getWorlds()) {
+            if (!disabledWorlds.contains(world)) {
+                world.setGameRule(GameRule.KEEP_INVENTORY, true);
+            }
+        }
+    }
+
+    public static List<World> getDisabledWorlds() {
+        return disabledWorlds;
     }
 }

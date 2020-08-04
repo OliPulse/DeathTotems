@@ -57,33 +57,36 @@ public class EventListenerClass implements Listener {
         if (!player.hasPermission("deathtotems.bypass")) {
             Inventory inventory = player.getInventory();
             UUID playerUUID = player.getUniqueId();
+            Location playerDeathLocation = e.getEntity().getLocation();
             if (inventoryHasItems(player.getInventory())) {
-                if (pendingDeathTotems.containsKey(playerUUID)) {
-                    removePlayerFromPendingHashMaps(player, false);
-                }
-                Configuration config = plugin.getConfig();
-                String deathMessage = config.getString("death-message");
-                String customPrefix = config.getString("chat-prefix");
-                if (deathMessage != null) {
-                    deathMessage = deathMessage.replaceAll("%POSITION_X%", ((int)player.getLocation().getX()) + "");
-                    deathMessage = deathMessage.replaceAll("%POSITION_Y%", ((int)player.getLocation().getY()) + "");
-                    deathMessage = deathMessage.replaceAll("%POSITION_Z%", ((int)player.getLocation().getZ()) + "");
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + deathMessage));
-
-                    String hologram = config.getString("death-totem-hologram");
-                    if (hologram != null) {
-                        hologram = ChatColor.translateAlternateColorCodes('&', hologram.replaceAll("%PLAYER%", player.getName()));
+                if (!DeathTotems.getDisabledWorlds().contains(playerDeathLocation.getWorld())) {
+                    if (pendingDeathTotems.containsKey(playerUUID)) {
+                        removePlayerFromPendingHashMaps(player, false);
                     }
-                    //Future update: handle player exp
-                    //player.sendMessage(player.getExp() + "");
-                    DeathTotem deathTotem = new DeathTotem(e.getEntity().getLocation(), inventory, player, deathTotemMaterial, hologram);
-                    pendingDeathTotems.put(playerUUID, deathTotem);
+                    Configuration config = plugin.getConfig();
+                    String deathMessage = config.getString("death-message");
+                    String customPrefix = config.getString("chat-prefix");
+                    if (deathMessage != null) {
+                        deathMessage = deathMessage.replaceAll("%POSITION_X%", ((int)playerDeathLocation.getX()) + "");
+                        deathMessage = deathMessage.replaceAll("%POSITION_Y%", ((int)playerDeathLocation.getY()) + "");
+                        deathMessage = deathMessage.replaceAll("%POSITION_Z%", ((int)playerDeathLocation.getZ()) + "");
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', customPrefix + deathMessage));
 
-                    Inventory pendingInventory = Bukkit.createInventory(inventory.getHolder(), inventory.getType());
-                    pendingInventory.setContents(inventory.getContents());
-                    pendingInventories.put(playerUUID, pendingInventory);
-                    startTimer(player, playerUUID);
-                    inventory.clear();
+                        String hologram = config.getString("death-totem-hologram");
+                        if (hologram != null) {
+                            hologram = ChatColor.translateAlternateColorCodes('&', hologram.replaceAll("%PLAYER%", player.getName()));
+                        }
+                        //Future update: handle player exp
+                        //player.sendMessage(player.getExp() + "");
+                        DeathTotem deathTotem = new DeathTotem(playerDeathLocation, inventory, player, deathTotemMaterial, hologram);
+                        pendingDeathTotems.put(playerUUID, deathTotem);
+
+                        Inventory pendingInventory = Bukkit.createInventory(inventory.getHolder(), inventory.getType());
+                        pendingInventory.setContents(inventory.getContents());
+                        pendingInventories.put(playerUUID, pendingInventory);
+                        startTimer(player, playerUUID);
+                        inventory.clear();
+                    }
                 }
             }
         }

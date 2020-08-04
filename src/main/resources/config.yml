@@ -24,6 +24,10 @@ death-totem-message: "&aYou have successfully retrieved your death totem."
 invalid-death-totem-message: "&cThis is not your pending death totem."
 # The hologram above the death totem. Placeholder: %PLAYER%
 death-totem-hologram: "&a%PLAYER%'s &bDeath Totem"
+# A list of world names in which the plugin will not be activated.
+disabled-worlds:
+  - ""
+  - ""
 
 # PERMISSIONS:
 # deathtotems.bypass - Allows players to keep inventory upon death.
