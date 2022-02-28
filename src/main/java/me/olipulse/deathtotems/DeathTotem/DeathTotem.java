@@ -42,12 +42,14 @@ public class DeathTotem {
         }
         this.location = new Location(location.getWorld(), (int)(location.getX()), (int)location.getY(), (int)location.getZ());
         //Fix block height limit issue
-        if (this.location.getY() > 255) {
-            this.location.setY(255);
+        //Fix for new height in 1.18
+        if (this.location.getY() > 319) {
+            this.location.setY(319);
         }
         //Fix below 0 totem  issue
-        if (this.location.getY() < 0) {
-            this.location.setY(0);
+        //Fix for new height in 1.18
+        if (this.location.getY() < -64) {
+            this.location.setY(-64);
         }
         previousBlock = this.location.getBlock().getBlockData().clone();
         //Disable stealing from chests
